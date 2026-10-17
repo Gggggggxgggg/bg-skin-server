@@ -1,3 +1,4 @@
+
 const express = require('express');
 const { Pool } = require('pg');
 
@@ -12,10 +13,12 @@ const pool = new Pool({
 app.use(express.json({ limit: '8kb' }));
 
 app.get('/', (req, res) => {
-    res.json({ ok: true });
+    res.json({
+        code: 1,
+        data: { ok: true }
+    });
 });
 
-// получить данные всех игроков
 app.get('/api/wings', async (req, res) => {
     try {
         const result = await pool.query(
@@ -23,18 +26,25 @@ app.get('/api/wings', async (req, res) => {
         );
 
         res.json({
-            ok: true,
-            players: result.rows.map(row => ({
-                userId: row.user_id,
-                wingId: row.wing_id
-            }))
+            code: 1,
+            data: {
+                ok: true,
+                players: result.rows.map(row => ({
+                    userId: row.user_id,
+                    wingId: row.wing_id
+                }))
+            }
         });
     } catch (e) {
-        res.status(500).json({ ok: false });
+        console.error('[GET /api/wings]', e);
+        res.status(500).json({
+            code: 0,
+            message: 'Database error',
+            data: { ok: false }
+        });
     }
 });
 
-// отправить новое значение wingId
 app.post('/api/wings', async (req, res) => {
     const { userId, wingId } = req.body || {};
 
@@ -44,7 +54,11 @@ app.post('/api/wings', async (req, res) => {
         !Number.isInteger(wingId) ||
         wingId < 0
     ) {
-        return res.status(400).json({ ok: false });
+        return res.status(400).json({
+            code: 0,
+            message: 'Invalid userId or wingId',
+            data: { ok: false }
+        });
     }
 
     try {
@@ -56,9 +70,17 @@ app.post('/api/wings', async (req, res) => {
             [userId, wingId]
         );
 
-        res.json({ ok: true });
+        res.json({
+            code: 1,
+            data: { ok: true }
+        });
     } catch (e) {
-        res.status(500).json({ ok: false });
+        console.error('[POST /api/wings]', e);
+        res.status(500).json({
+            code: 0,
+            message: 'Database error',
+            data: { ok: false }
+        });
     }
 });
 
@@ -70,9 +92,14 @@ async function start() {
         )
     `);
 
-    app.listen(process.env.PORT || 10000, '0.0.0.0', () => {
-        console.log('Server started');
+    const port = process.env.PORT || 10000;
+
+    app.listen(port, '0.0.0.0', () => {
+        console.log('Server started on port ' + port);
     });
 }
 
-start().catch(console.error);
+start().catch(e => {
+    console.error('Failed to start server:', e);
+    process.exit(1);
+});
