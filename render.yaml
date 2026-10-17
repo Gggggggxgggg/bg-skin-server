@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: bg-skin-server
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: bg-skin-db
+          property: connectionString
+
+databases:
+  - name: bg-skin-db
+    plan: free
+    databaseName: bg_skin
+    user: bg_skin_user
